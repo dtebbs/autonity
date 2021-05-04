@@ -38,27 +38,11 @@ func DeployContract(abi *abi.ABI, autonityConfig *params.AutonityContractGenesis
 	// Convert the contract bytecode from hex into bytes
 	contractBytecode := common.Hex2Bytes(autonityConfig.Bytecode)
 
-	ln := len(autonityConfig.GetValidatorUsers())
-	validators := make(common.Addresses, 0, ln)
-	enodes := make([]string, 0, ln)
-	accTypes := make([]*big.Int, 0, ln)
-	participantStake := make([]*big.Int, 0, ln)
-
-	defaultCommitteeSize := big.NewInt(1000)
+	defaultCommitteeSize := big.NewInt(21)
 	defaultVersion := "v0.0.0"
 
-	for _, v := range autonityConfig.Users {
-		validators = append(validators, *v.Address)
-		enodes = append(enodes, v.Enode)
-		accTypes = append(accTypes, big.NewInt(int64(v.Type.GetID())))
-		participantStake = append(participantStake, big.NewInt(int64(v.Stake)))
-	}
-
 	constructorParams, err := abi.Pack("",
-		validators,
-		enodes,
-		accTypes,
-		participantStake,
+		autonityConfig.GetValidators(),
 		autonityConfig.Operator,
 		new(big.Int).SetUint64(autonityConfig.MinGasPrice),
 		defaultCommitteeSize,
