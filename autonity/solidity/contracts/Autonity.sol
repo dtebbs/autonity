@@ -53,6 +53,7 @@ contract Autonity is IERC20 {
     uint256 public lastEpochBlock;
     uint256 public epochTotalBondedStake;
     uint256 public unbondingPeriod;
+    uint256 public blockPeriod;
     CommitteeMember[] private committee;
 
     mapping (address => mapping (address => uint256)) private allowances;

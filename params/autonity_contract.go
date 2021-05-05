@@ -20,10 +20,15 @@ type AutonityContractGenesis struct {
 	// would like this type to be []byte but the unmarshalling is not working
 	Bytecode string `json:"bytecode,omitempty" toml:",omitempty"`
 	// Json ABI of the contract
-	ABI         string         `json:"abi,omitempty" toml:",omitempty"`
-	MinGasPrice uint64         `json:"minGasPrice" toml:",omitempty"`
-	Operator    common.Address `json:"operator" toml:",omitempty"`
-	Validators  []Validator    `json:"users" toml:",omitempty"`
+	ABI             string         `json:"abi,omitempty" toml:",omitempty"`
+	MinGasPrice     uint64         `json:"minGasPrice"`
+	EpochPeriod     uint64         `json:"epochPeriod"`
+	UnbondingPeriod uint64         `json:"unbondingPeriod"`
+	BlockPeriod     uint64         `json:"blockPeriod"`
+	Operator        common.Address `json:"operator"`
+	Treasury        common.Address `json:"treasury"`
+	TreasuryFee     uint64         `json:"treasuryFees"`
+	Validators      []*Validator   `json:"validators"`
 }
 
 // Prepare prepares the AutonityContractGenesis by filling in missing fields.
@@ -46,7 +51,7 @@ func (ac *AutonityContractGenesis) Prepare() error {
 		ac.Operator = acdefault.Governance()
 	}
 	if len(ac.GetValidators()) == 0 {
-		return errors.New("validators list is empty")
+		return errors.New("no initial validators")
 	}
 
 	for i, v := range ac.Validators {
@@ -103,6 +108,6 @@ func (u *Validator) Validate() error {
 	return nil
 }
 
-func (ac *AutonityContractGenesis) GetValidators() []Validator {
+func (ac *AutonityContractGenesis) GetValidators() []*Validator {
 	return ac.Validators
 }

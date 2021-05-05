@@ -266,22 +266,17 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 // ToBlock creates the genesis block and writes state of a genesis specification
 // to the given database (or discards it if nil).
 func (g *Genesis) ToBlock(db ethdb.Database) (*types.Block, error) {
-
 	var committee types.Committee
 	if g.Config.AutonityContractConfig != nil {
 		if g.Difficulty.Cmp(big.NewInt(1)) != 0 {
 			return nil, fmt.Errorf("autonity requires genesis to have a difficulty of 1, instead got %v", g.Difficulty)
 		}
-		err := g.Config.AutonityContractConfig.Prepare()
-		if err != nil {
-			return nil, err
-		}
+		var err error
 		committee, err = extractCommittee(g.Config.AutonityContractConfig.GetValidators())
 		if err != nil {
 			return nil, err
 		}
 	}
-
 	if db == nil {
 		db = rawdb.NewMemoryDatabase()
 	}
@@ -411,7 +406,7 @@ func (g *Genesis) Commit(db ethdb.Database) (*types.Block, error) {
 // extractCommittee takes a slice of autonity users and extracts the validators
 // into a new type 'types.Committee' which is returned. It returns an error if
 // the provided users contained no validators.
-func extractCommittee(validators []params.Validator) (types.Committee, error) {
+func extractCommittee(validators []*params.Validator) (types.Committee, error) {
 	var committee types.Committee
 	for _, v := range validators {
 		member := types.CommitteeMember{

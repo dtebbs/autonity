@@ -33,7 +33,6 @@ import (
 	"github.com/clearmatics/autonity/common"
 	"github.com/clearmatics/autonity/common/hexutil"
 	"github.com/clearmatics/autonity/consensus"
-	"github.com/clearmatics/autonity/consensus/ethash"
 	tendermintcore "github.com/clearmatics/autonity/consensus/tendermint/core"
 	"github.com/clearmatics/autonity/core"
 	"github.com/clearmatics/autonity/core/bloombits"
@@ -167,10 +166,7 @@ func New(stack *node.Node, config *Config, cons func(basic consensus.Engine) con
 		p2pServer:         stack.Server(),
 	}
 
-	// force to set the istanbul etherbase to node key address
-	if chainConfig.Tendermint != nil {
-		eth.etherbase = crypto.PubkeyToAddress(stack.Config().NodeKey().PublicKey)
-	}
+	eth.etherbase = crypto.PubkeyToAddress(stack.Config().NodeKey().PublicKey)
 
 	bcVersion := rawdb.ReadDatabaseVersion(chainDb)
 	var dbVer = "<nil>"
@@ -256,35 +252,7 @@ func makeExtraData(extra []byte) []byte {
 
 // CreateConsensusEngine creates the required type of consensus engine instance for an Ethereum service
 func CreateConsensusEngine(ctx *node.Node, chainConfig *params.ChainConfig, config *Config, notify []string, noverify bool, db ethdb.Database, vmConfig *vm.Config) consensus.Engine {
-
-	if chainConfig.Tendermint != nil {
-		return tendermintBackend.New(&config.Tendermint, ctx.Config().NodeKey(), db, chainConfig, vmConfig)
-	}
-
-	// Otherwise assume proof-of-work
-	ethConfig := config.Ethash
-
-	switch ethConfig.PowMode {
-	case ethash.ModeFake:
-		log.Warn("Ethash used in fake mode")
-		return ethash.NewFaker()
-	case ethash.ModeTest:
-		log.Warn("Ethash used in test mode")
-		return ethash.NewTester(nil, noverify)
-	default:
-		engine := ethash.New(ethash.Config{
-			CacheDir:         ctx.ResolvePath(ethConfig.CacheDir),
-			CachesInMem:      ethConfig.CachesInMem,
-			CachesOnDisk:     ethConfig.CachesOnDisk,
-			CachesLockMmap:   ethConfig.CachesLockMmap,
-			DatasetDir:       ethConfig.DatasetDir,
-			DatasetsInMem:    ethConfig.DatasetsInMem,
-			DatasetsOnDisk:   ethConfig.DatasetsOnDisk,
-			DatasetsLockMmap: ethConfig.DatasetsLockMmap,
-		}, notify, noverify)
-		engine.SetThreads(-1) // Disable CPU mining
-		return engine
-	}
+	return tendermintBackend.New(ctx.Config().NodeKey(), db, chainConfig, vmConfig)
 }
 
 // APIs return the collection of RPC services the ethereum package offers.
