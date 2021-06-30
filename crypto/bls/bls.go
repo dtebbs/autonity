@@ -13,7 +13,7 @@ type Signature = blst.P2Affine
 type AggregateSignature = blst.P2Aggregate
 type AggregatePublicKey = blst.P1Aggregate
 
-func blsTest() error {
+func reuseECDSAKeyForBLSTest() error {
 
 	// new ecdsa key, it is a 32 bytes random number.
 	ecdsaKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
