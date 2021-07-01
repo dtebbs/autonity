@@ -1,6 +1,3 @@
-// +build linux,amd64 linux,arm64 darwin,amd64 windows,amd64
-// +build !blst_disabled
-
 package blst
 
 import (
@@ -17,13 +14,13 @@ var pubkeyCache, _ = ristretto.NewCache(&ristretto.Config{
 	BufferItems: 64,
 })
 
-// PublicKey used in the BLS signature scheme.
+// BLSPublicKey used in the BLS signature scheme.
 type PublicKey struct {
 	p *blstPublicKey
 }
 
 // PublicKeyFromBytes creates a BLS public key from a  BigEndian byte slice.
-func PublicKeyFromBytes(pubKey []byte) (common.PublicKey, error) {
+func PublicKeyFromBytes(pubKey []byte) (common.BLSPublicKey, error) {
 
 	if len(pubKey) != common.BLSPubkeyLength {
 		return nil, fmt.Errorf("public key must be %d bytes", common.BLSPubkeyLength)
@@ -48,7 +45,7 @@ func PublicKeyFromBytes(pubKey []byte) (common.PublicKey, error) {
 }
 
 // AggregatePublicKeys aggregates the provided raw public keys into a single key.
-func AggregatePublicKeys(pubs [][]byte) (common.PublicKey, error) {
+func AggregatePublicKeys(pubs [][]byte) (common.BLSPublicKey, error) {
 	agg := new(blstAggregatePublicKey)
 	mulP1 := make([]*blstPublicKey, 0, len(pubs))
 	for _, pubkey := range pubs {
@@ -71,7 +68,7 @@ func (p *PublicKey) Marshal() []byte {
 }
 
 // Copy the public key to a new pointer reference.
-func (p *PublicKey) Copy() common.PublicKey {
+func (p *PublicKey) Copy() common.BLSPublicKey {
 	np := *p.p
 	return &PublicKey{p: &np}
 }
@@ -83,7 +80,7 @@ func (p *PublicKey) IsInfinite() bool {
 }
 
 // Aggregate two public keys.
-func (p *PublicKey) Aggregate(p2 common.PublicKey) common.PublicKey {
+func (p *PublicKey) Aggregate(p2 common.BLSPublicKey) common.BLSPublicKey {
 	agg := new(blstAggregatePublicKey)
 	// No group check here since it is checked at decompression time
 	agg.Add(p.p, false)
