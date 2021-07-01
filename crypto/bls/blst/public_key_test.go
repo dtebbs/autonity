@@ -1,6 +1,7 @@
 package blst_test
 
 import (
+	"bytes"
 	"errors"
 	"github.com/clearmatics/autonity/crypto/bls/blst"
 	"github.com/stretchr/testify/require"
@@ -48,6 +49,7 @@ func TestPublicKeyFromBytes(t *testing.T) {
 			res, err := blst.PublicKeyFromBytes(test.input)
 			if test.err != nil {
 				require.NotEqual(t, nil, err, "No error returned")
+				require.Error(t, test.err, err.Error())
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, test.input, res.Marshal(), "out put key is not match with input")
@@ -63,8 +65,7 @@ func TestPublicKey_Copy(t *testing.T) {
 	pubkeyBytes := pubkeyA.Marshal()
 
 	pubkeyB := pubkeyA.Copy()
-	priv2, err := blst.RandKey()
-	require.NoError(t, err)
-	pubkeyB.Aggregate(priv2.PublicKey())
-	require.Equal(t, pubkeyA.Marshal(), pubkeyBytes, "Pubkey was mutated after copy")
+	pubkeyBBytes := pubkeyB.Marshal()
+
+	require.Equal(t, true, bytes.Equal(pubkeyBytes, pubkeyBBytes))
 }
