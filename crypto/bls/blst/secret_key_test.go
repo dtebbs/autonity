@@ -19,6 +19,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	require.NoError(t, err)
 	pk2, err := blst.SecretKeyFromBytes(b32[:])
 	require.NoError(t, err)
+	require.Equal(t, pk.Marshal(), priv.Marshal(), "Keys not equal")
 	require.Equal(t, pk.Marshal(), pk2.Marshal(), "Keys not equal")
 }
 

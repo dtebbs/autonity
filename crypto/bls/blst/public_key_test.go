@@ -69,3 +69,16 @@ func TestPublicKey_Copy(t *testing.T) {
 
 	require.Equal(t, true, bytes.Equal(pubkeyBytes, pubkeyBBytes))
 }
+
+func TestPublicKey_MarshalUnMarshal(t *testing.T) {
+	priv, err := blst.RandKey()
+	require.NoError(t, err)
+	pubkey := priv.PublicKey()
+
+	pubkeyBytes := pubkey.Marshal()
+
+	pKeyFromBytes, err := blst.PublicKeyFromBytes(pubkeyBytes)
+	require.NoError(t, err)
+
+	require.Equal(t, pubkey, pKeyFromBytes)
+}

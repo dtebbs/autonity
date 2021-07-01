@@ -184,3 +184,17 @@ func TestCopy(t *testing.T) {
 	signatureA.s.Sign(key.p, []byte("bar"), dst)
 	require.Equal(t, false, bytes.Equal(signatureA.Marshal(), signatureB.Marshal()))
 }
+
+func TestSignature_MarshalUnMarshal(t *testing.T) {
+	priv, err := RandKey()
+	require.NoError(t, err)
+	key, ok := priv.(*bls12SecretKey)
+	require.Equal(t, true, ok)
+
+	signatureA := &Signature{s: new(blstSignature).Sign(key.p, []byte("foo"), dst)}
+	signatureBytes := signatureA.Marshal()
+
+	signatureB, err := SignatureFromBytes(signatureBytes)
+	require.NoError(t, err)
+	require.Equal(t, true, bytes.Equal(signatureA.Marshal(), signatureB.Marshal()))
+}
