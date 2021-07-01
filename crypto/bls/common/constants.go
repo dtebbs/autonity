@@ -6,6 +6,8 @@ var ZeroSecretKey = [32]byte{}
 // InfinitePublicKey represents an infinite public key.
 var InfinitePublicKey = [48]byte{0xC0}
 
+var ECDSASecretKeyLength = 32
+
 // BLS private key length, public key length and signature key length.
 var BLSSecretKeyLength = 32
 var BLSPubkeyLength = 48

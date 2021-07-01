@@ -1,12 +1,18 @@
 package bls
 
 import (
+	"crypto/ecdsa"
 	"math/big"
 
 	"github.com/clearmatics/autonity/crypto/bls/blst"
 	"github.com/clearmatics/autonity/crypto/bls/common"
 	"github.com/pkg/errors"
 )
+
+// SecretKeyFromECDSAKey create a BLS private key from a ECDSA private key.
+func SecretKeyFromECDSAKey(sk *ecdsa.PrivateKey) (SecretKey, error) {
+	return blst.SecretKeyFromECDSAKey(sk.D.Bytes())
+}
 
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
 func SecretKeyFromBytes(privKey []byte) (SecretKey, error) {

@@ -28,6 +28,23 @@ func RandKey() (common.BLSSecretKey, error) {
 	return secKey, nil
 }
 
+func SecretKeyFromECDSAKey(ecdsaKey []byte) (common.BLSSecretKey, error) {
+	if len(ecdsaKey) != common.ECDSASecretKeyLength {
+		return nil, fmt.Errorf("secret key must be %d bytes", common.ECDSASecretKeyLength)
+	}
+
+	blsSK := blst.KeyGen(ecdsaKey)
+	if blsSK == nil {
+		return nil, common.ErrSecretConvert
+	}
+
+	wrappedKey := &bls12SecretKey{p: blsSK}
+	if wrappedKey.IsZero() {
+		return nil, common.ErrZeroKey
+	}
+	return wrappedKey, nil
+}
+
 // SecretKeyFromBytes creates a BLS private key from a BigEndian byte slice.
 func SecretKeyFromBytes(privKey []byte) (common.BLSSecretKey, error) {
 	if len(privKey) != common.BLSSecretKeyLength {

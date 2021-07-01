@@ -1,6 +1,9 @@
 package bls
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"github.com/clearmatics/autonity/crypto/secp256k1"
 	"github.com/stretchr/testify/require"
 	"math/big"
 	"testing"
@@ -47,7 +50,6 @@ func TestValidateSecretKeyString(t *testing.T) {
 		_, err = SecretKeyFromBigNum(rBigNum.String())
 		require.NotNil(t, err)
 
-
 		key, err := RandKey()
 		require.NoError(t, err)
 		rBigNum = new(big.Int).SetBytes(key.Marshal())
@@ -56,6 +58,30 @@ func TestValidateSecretKeyString(t *testing.T) {
 		_, err = SecretKeyFromBigNum(rBigNum.String())
 		require.NoError(t, err)
 	})
+}
+
+func TestReuseECDSAKeyForBLS(t *testing.T) {
+	// new ecdsa key, it is a 32 bytes random number.
+	ecdsaKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+	require.NoError(t, err)
+
+	blsPrivateKey, err := SecretKeyFromECDSAKey(ecdsaKey)
+	require.NoError(t, err)
+
+	for i := 0; i < 100; i++ {
+		// use ecdsa key, to elicit a deterministic private key of bls.
+		skNewGenerated, err := SecretKeyFromECDSAKey(ecdsaKey)
+		require.NoError(t, err)
+
+		// check the deterministic property.
+		require.Equal(t, true, bytes.Equal(blsPrivateKey.Marshal(), skNewGenerated.Marshal()))
+
+		// check basic features of bls signature signing and verification.
+		pk := skNewGenerated.PublicKey()
+		msg := []byte("hello world!")
+		sig := skNewGenerated.Sign(msg)
+		require.Equal(t, true, sig.Verify(pk, msg))
+	}
 }
 
 /*

@@ -30,4 +30,3 @@ func (s *SignatureSet) Join(set *SignatureSet) *SignatureSet {
 func (s *SignatureSet) Verify() (bool, error) {
 	return VerifyMultipleSignatures(s.Signatures, s.Messages, s.PublicKeys)
 }
-
