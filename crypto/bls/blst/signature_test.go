@@ -19,7 +19,7 @@ func TestSignVerify(t *testing.T) {
 }
 
 // since the msg is not distinct, the order of pubkey for aggregation verification is a matter.
-func TestAggregateVerify(t *testing.T) {
+func TestAggregateVerifyWithDifferentKeys(t *testing.T) {
 	pubkeys := make([]common.BLSPublicKey, 0, 100)
 	sigs := make([]common.BLSSignature, 0, 100)
 	var msgs [][32]byte
@@ -28,6 +28,27 @@ func TestAggregateVerify(t *testing.T) {
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
 		priv, err := RandKey()
 		require.NoError(t, err)
+		pub := priv.PublicKey()
+		sig := priv.Sign(msg[:])
+		pubkeys = append(pubkeys, pub)
+		sigs = append(sigs, sig)
+		msgs = append(msgs, msg)
+	}
+	aggSig := AggregateSignatures(sigs)
+	require.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs), "BLSSignature did not verify")
+}
+
+// since the msg is not distinct, the order of pubkey for aggregation verification is a matter.
+func TestAggregateVerifyWithDistinctKey(t *testing.T) {
+	pubkeys := make([]common.BLSPublicKey, 0, 100)
+	sigs := make([]common.BLSSignature, 0, 100)
+	var msgs [][32]byte
+
+	priv, err := RandKey()
+	require.NoError(t, err)
+	for i := 0; i < 100; i++ {
+		// with each different key signed different msg.
+		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
 		pubkeys = append(pubkeys, pub)
