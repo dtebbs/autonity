@@ -63,6 +63,7 @@ func TestSecretKeyFromBytes(t *testing.T) {
 			res, err := blst.SecretKeyFromBytes(test.input)
 			if test.err != nil {
 				require.NotEqual(t, nil, err, "No error returned")
+				require.Error(t, test.err, err.Error())
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, 0, bytes.Compare(res.Marshal(), test.input))

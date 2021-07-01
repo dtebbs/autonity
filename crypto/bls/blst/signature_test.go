@@ -130,10 +130,26 @@ func TestSignatureFromBytes(t *testing.T) {
 			res, err := SignatureFromBytes(test.input)
 			if test.err != nil {
 				require.NotEqual(t, nil, err, "No error returned")
+				require.Error(t, test.err, err.Error())
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, 0, bytes.Compare(res.Marshal(), test.input))
 			}
 		})
 	}
+}
+
+func TestCopy(t *testing.T) {
+	priv, err := RandKey()
+	require.NoError(t, err)
+	key, ok := priv.(*bls12SecretKey)
+	require.Equal(t, true, ok)
+
+	signatureA := &Signature{s: new(blstSignature).Sign(key.p, []byte("foo"), dst)}
+	signatureB, ok := signatureA.Copy().(*Signature)
+	require.Equal(t, true, ok)
+	require.Equal(t, true, bytes.Equal(signatureA.Marshal(), signatureB.Marshal()))
+
+	signatureA.s.Sign(key.p, []byte("bar"), dst)
+	require.Equal(t, false, bytes.Equal(signatureA.Marshal(), signatureB.Marshal()))
 }
