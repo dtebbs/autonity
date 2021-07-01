@@ -18,11 +18,13 @@ func TestSignVerify(t *testing.T) {
 	require.Equal(t, true, sig.Verify(pub, msg), "BLSSignature did not verify")
 }
 
+// since the msg is not distinct, the order of pubkey for aggregation verification is a matter.
 func TestAggregateVerify(t *testing.T) {
 	pubkeys := make([]common.BLSPublicKey, 0, 100)
 	sigs := make([]common.BLSSignature, 0, 100)
 	var msgs [][32]byte
 	for i := 0; i < 100; i++ {
+		// with each different key signed different msg.
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
 		priv, err := RandKey()
 		require.NoError(t, err)
@@ -36,11 +38,13 @@ func TestAggregateVerify(t *testing.T) {
 	require.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs), "BLSSignature did not verify")
 }
 
+// if the msg is distinct, then the order of public key does not impact the aggregation verification.
 func TestFastAggregateVerify(t *testing.T) {
 	pubkeys := make([]common.BLSPublicKey, 0, 100)
 	sigs := make([]common.BLSSignature, 0, 100)
 	msg := [32]byte{'h', 'e', 'l', 'l', 'o'}
 	for i := 0; i < 100; i++ {
+		// with different key to sign a distinct msg.
 		priv, err := RandKey()
 		require.NoError(t, err)
 		pub := priv.PublicKey()
@@ -49,6 +53,12 @@ func TestFastAggregateVerify(t *testing.T) {
 		sigs = append(sigs, sig)
 	}
 	aggSig := AggregateSignatures(sigs)
+
+	// change the pubkey orders
+	tmpKey := pubkeys[0]
+	pubkeys[0] = pubkeys[len(pubkeys)-1]
+	pubkeys[len(pubkeys)-1] = tmpKey
+
 	require.Equal(t, true, aggSig.FastAggregateVerify(pubkeys, msg), "BLSSignature did not verify")
 }
 
@@ -69,6 +79,27 @@ func TestMultipleSignatureVerification(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
 		priv, err := RandKey()
+		require.NoError(t, err)
+		pub := priv.PublicKey()
+		sig := priv.Sign(msg[:]).Marshal()
+		pubkeys = append(pubkeys, pub)
+		sigs = append(sigs, sig)
+		msgs = append(msgs, msg)
+	}
+	verify, err := VerifyMultipleSignatures(sigs, msgs, pubkeys)
+	require.NoError(t, err, "BLSSignature did not verify")
+	require.Equal(t, true, verify, "BLSSignature did not verify")
+}
+
+// with same key to sign different msgs, and do the signature aggregation.
+// in such case, a same validator can form a single aggregation of signatures for the entire Epoch.
+func TestMultipleSignatureByDistinctKeyVerification(t *testing.T) {
+	pubkeys := make([]common.BLSPublicKey, 0, 100)
+	sigs := make([][]byte, 0, 100)
+	priv, err := RandKey()
+	var msgs [][32]byte
+	for i := 0; i < 100; i++ {
+		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
 		require.NoError(t, err)
 		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:]).Marshal()
