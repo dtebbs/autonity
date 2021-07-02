@@ -2,6 +2,7 @@ package blst_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"testing"
 
@@ -80,4 +81,18 @@ func TestSerialize(t *testing.T) {
 
 	_, err = blst.SecretKeyFromBytes(b)
 	require.NoError(t, err)
+}
+
+func TestSecretKey_Hex(t *testing.T) {
+	sKey, err := blst.RandKey()
+	require.NoError(t, err)
+
+	str := sKey.Hex()
+	b, err := hex.DecodeString(str[2:])
+	require.NoError(t, err)
+
+	sk, err := blst.SecretKeyFromBytes(b)
+	require.NoError(t, err)
+
+	require.Equal(t, sKey, sk)
 }

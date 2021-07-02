@@ -1,6 +1,7 @@
 package blst
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sync"
 
@@ -197,6 +198,10 @@ func (s *Signature) Marshal() []byte {
 func (s *Signature) Copy() common.BLSSignature {
 	sign := *s.s
 	return &Signature{s: &sign}
+}
+
+func (s *Signature) Hex() string {
+	return "0x" + hex.EncodeToString(s.Marshal())
 }
 
 // VerifyCompressed verifies that the compressed signature and pubkey

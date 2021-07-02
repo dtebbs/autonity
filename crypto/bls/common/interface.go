@@ -7,6 +7,7 @@ type BLSSecretKey interface {
 	Sign(msg []byte) BLSSignature
 	Marshal() []byte
 	IsZero() bool
+	Hex() string
 }
 
 // BLSPublicKey represents a BLS public key.
@@ -15,14 +16,15 @@ type BLSPublicKey interface {
 	Copy() BLSPublicKey
 	Aggregate(p2 BLSPublicKey) BLSPublicKey
 	IsInfinite() bool
+	Hex() string
 }
 
 // BLSSignature represents a BLS signature.
 type BLSSignature interface {
 	Verify(pubKey BLSPublicKey, msg []byte) bool
-	// Deprecated: Use FastAggregateVerify or use this method in spectests only.
 	AggregateVerify(pubKeys []BLSPublicKey, msgs [][32]byte) bool
 	FastAggregateVerify(pubKeys []BLSPublicKey, msg [32]byte) bool
 	Marshal() []byte
 	Copy() BLSSignature
+	Hex() string
 }

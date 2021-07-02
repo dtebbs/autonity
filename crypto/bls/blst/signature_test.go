@@ -2,6 +2,7 @@ package blst
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"testing"
 
@@ -216,6 +217,22 @@ func TestSignature_MarshalUnMarshal(t *testing.T) {
 	signatureBytes := signatureA.Marshal()
 
 	signatureB, err := SignatureFromBytes(signatureBytes)
+	require.NoError(t, err)
+	require.Equal(t, true, bytes.Equal(signatureA.Marshal(), signatureB.Marshal()))
+}
+
+func TestSignature_Hex(t *testing.T) {
+	priv, err := RandKey()
+	require.NoError(t, err)
+	key, ok := priv.(*bls12SecretKey)
+	require.Equal(t, true, ok)
+
+	signatureA := &Signature{s: new(blstSignature).Sign(key.p, []byte("foo"), dst)}
+	str := signatureA.Hex()
+	b, err := hex.DecodeString(str[2:])
+	require.NoError(t, err)
+
+	signatureB, err := SignatureFromBytes(b)
 	require.NoError(t, err)
 	require.Equal(t, true, bytes.Equal(signatureA.Marshal(), signatureB.Marshal()))
 }

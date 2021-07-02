@@ -2,6 +2,7 @@ package blst
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"github.com/clearmatics/autonity/crypto/bls/common"
 	blst "github.com/supranational/blst/bindings/go"
@@ -93,4 +94,8 @@ func (s *bls12SecretKey) Marshal() []byte {
 		keyBytes = append(emptyBytes, keyBytes...)
 	}
 	return keyBytes
+}
+
+func (s *bls12SecretKey) Hex() string {
+	return "0x" + hex.EncodeToString(s.Marshal())
 }

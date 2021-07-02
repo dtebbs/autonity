@@ -2,6 +2,7 @@ package blst_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"github.com/clearmatics/autonity/crypto/bls/blst"
 	"github.com/stretchr/testify/require"
@@ -81,4 +82,20 @@ func TestPublicKey_MarshalUnMarshal(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, pubkey, pKeyFromBytes)
+}
+
+func TestPublicKey_Hex(t *testing.T) {
+	priv, err := blst.RandKey()
+	require.NoError(t, err)
+	pubkey := priv.PublicKey()
+
+	str := pubkey.Hex()
+
+	b, err := hex.DecodeString(str[2:])
+	require.NoError(t, err)
+
+	pb, err := blst.PublicKeyFromBytes(b)
+	require.NoError(t, err)
+
+	require.Equal(t, pubkey, pb)
 }

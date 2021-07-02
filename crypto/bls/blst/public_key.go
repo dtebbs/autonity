@@ -1,6 +1,7 @@
 package blst
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/clearmatics/autonity/crypto/bls/common"
 	"github.com/dgraph-io/ristretto"
@@ -88,4 +89,8 @@ func (p *PublicKey) Aggregate(p2 common.BLSPublicKey) common.BLSPublicKey {
 	p.p = agg.ToAffine()
 
 	return p
+}
+
+func (p *PublicKey) Hex() string {
+	return "0x" + hex.EncodeToString(p.Marshal())
 }
