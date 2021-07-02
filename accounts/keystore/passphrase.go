@@ -33,6 +33,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/clearmatics/autonity/crypto/bls"
 	"io"
 	"io/ioutil"
 	"os"
@@ -98,9 +99,18 @@ func (ks keyStorePassphrase) GetKey(addr common.Address, filename, auth string) 
 }
 
 // StoreKey generates a key, encrypts with 'auth' and stores in the given directory
-func StoreKey(dir, auth string, scryptN, scryptP int) (accounts.Account, error) {
-	_, a, err := storeNewKey(&keyStorePassphrase{dir, scryptN, scryptP, false}, rand.Reader, auth)
-	return a, err
+func StoreKey(dir, auth string, scryptN, scryptP int) (accounts.Account, bls.PublicKey, error) {
+	sk, a, err := storeNewKey(&keyStorePassphrase{dir, scryptN, scryptP, false}, rand.Reader, auth)
+	if err != nil {
+		return a, nil, err
+	}
+
+	blsKey, err := bls.SecretKeyFromECDSAKey(sk.PrivateKey)
+	if err != nil {
+		return a, nil, err
+	}
+
+	return a, blsKey.PublicKey(), err
 }
 
 func (ks keyStorePassphrase) StoreKey(filename string, key *Key, auth string) error {

@@ -276,13 +276,13 @@ func accountCreate(ctx *cli.Context) error {
 
 	password := utils.GetPassPhraseWithList("Your new account is locked with a password. Please give a password. Do not forget this password.", true, 0, utils.MakePasswordList(ctx))
 
-	account, err := keystore.StoreKey(keydir, password, scryptN, scryptP)
-
+	account, blsPubKey, err := keystore.StoreKey(keydir, password, scryptN, scryptP)
 	if err != nil {
 		utils.Fatalf("Failed to create account: %v", err)
 	}
 	fmt.Printf("\nYour new key was generated\n\n")
 	fmt.Printf("Public address of the key:   %s\n", account.Address.Hex())
+	fmt.Printf("Signature aggregation public address of the key:   %s\n", blsPubKey.Hex())
 	fmt.Printf("Path of the secret key file: %s\n\n", account.URL.Path)
 	fmt.Printf("- You can share your public address with anyone. Others need it to interact with you.\n")
 	fmt.Printf("- You must NEVER share the secret key with anyone! The key controls access to your funds!\n")
