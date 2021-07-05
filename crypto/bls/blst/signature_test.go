@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"testing"
-
 	"github.com/clearmatics/autonity/crypto/bls/common"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestSignVerify(t *testing.T) {
@@ -44,20 +43,133 @@ func TestAggregateVerifyWithDistinctKey(t *testing.T) {
 	pubkeys := make([]common.BLSPublicKey, 0, 100)
 	sigs := make([]common.BLSSignature, 0, 100)
 	var msgs [][32]byte
-
+	// generate unique bls key.
 	priv, err := RandKey()
 	require.NoError(t, err)
+	pub := priv.PublicKey()
+	// sign different msgs with the key.
 	for i := 0; i < 100; i++ {
 		// with each different key signed different msg.
 		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
-		pub := priv.PublicKey()
 		sig := priv.Sign(msg[:])
+
+		// ordering the keys, signatures, and msgs in memory.
 		pubkeys = append(pubkeys, pub)
 		sigs = append(sigs, sig)
 		msgs = append(msgs, msg)
 	}
 	aggSig := AggregateSignatures(sigs)
+
+	// verification of aggregated signature.
 	require.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs), "BLSSignature did not verify")
+}
+
+func Test20MinEpoch1ValidatorSigAggVerification(t *testing.T) {
+	epochLength := 1200
+	pubkeys := make([]common.BLSPublicKey, 0, epochLength)
+	sigs := make([]common.BLSSignature, 0, epochLength)
+	var msgs [][32]byte
+	// generate unique bls key.
+	priv, err := RandKey()
+	pub := priv.PublicKey()
+	require.NoError(t, err)
+	// sign different msgs with the key.
+	for i := 0; i < epochLength; i++ {
+		// with the key of same validator to sign different msgs.
+		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
+		sig := priv.Sign(msg[:])
+
+		// ordering the keys, signatures, and msgs in memory.
+		pubkeys = append(pubkeys, pub)
+		sigs = append(sigs, sig)
+		msgs = append(msgs, msg)
+	}
+	// aggregate the signatures of single validator into one aggregated signature.
+	aggSig := AggregateSignatures(sigs)
+
+	// verification of aggregated signatures of the validator.
+	require.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs), "BLSSignature did not verify")
+}
+
+func Test10MinEpoch1ValidatorSigAggVerification(t *testing.T) {
+	epochLength := 600
+	pubkeys := make([]common.BLSPublicKey, 0, epochLength)
+	sigs := make([]common.BLSSignature, 0, epochLength)
+	var msgs [][32]byte
+	// generate unique bls key.
+	priv, err := RandKey()
+	pub := priv.PublicKey()
+	require.NoError(t, err)
+	// sign different msgs with the key.
+	for i := 0; i < epochLength; i++ {
+		// with the key of same validator to sign different msgs.
+		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
+		sig := priv.Sign(msg[:])
+
+		// ordering the keys, signatures, and msgs in memory.
+		pubkeys = append(pubkeys, pub)
+		sigs = append(sigs, sig)
+		msgs = append(msgs, msg)
+	}
+	// aggregate the signatures of single validator into one aggregated signature.
+	aggSig := AggregateSignatures(sigs)
+
+	// verification of aggregated signature.
+	require.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs), "BLSSignature did not verify")
+}
+
+func Test5MinEpoch1ValidatorSigAggVerification(t *testing.T) {
+	epochLength := 300
+	pubkeys := make([]common.BLSPublicKey, 0, epochLength)
+	sigs := make([]common.BLSSignature, 0, epochLength)
+	var msgs [][32]byte
+	// generate unique bls key.
+	priv, err := RandKey()
+	pub := priv.PublicKey()
+	require.NoError(t, err)
+	// sign different msgs with the key.
+	for i := 0; i < epochLength; i++ {
+		// with the key of same validator to sign different msgs.
+		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
+		sig := priv.Sign(msg[:])
+
+		// ordering the keys, signatures, and msgs in memory.
+		pubkeys = append(pubkeys, pub)
+		sigs = append(sigs, sig)
+		msgs = append(msgs, msg)
+	}
+	// aggregate the signatures of single validator into one aggregated signature.
+	aggSig := AggregateSignatures(sigs)
+
+	// verification of aggregated signature.
+	require.Equal(t, true, aggSig.AggregateVerify(pubkeys, msgs), "BLSSignature did not verify")
+}
+
+// if the msg is distinct, then the order of public key does not impact the aggregation verification.
+func Test20MinEpoch21ValidatorsOnSameMsgFastAggregateVerify(t *testing.T) {
+	numOfValidator := 21
+	epochLength := 1200
+	skeys := make([]common.BLSSecretKey, 0, numOfValidator)
+	pubkeys := make([]common.BLSPublicKey, 0, numOfValidator)
+	for i := 0; i < numOfValidator; i++ {
+		priv, err := RandKey()
+		require.NoError(t, err)
+		skeys = append(skeys, priv)
+		pubkeys = append(pubkeys, priv.PublicKey())
+	}
+
+	// assume we have 2 rounds for each height, we only count step: preVote, and preCommit.
+	for i := 0; i < epochLength*2*2; i++ {
+		msg := [32]byte{'h', 'e', 'l', 'l', 'o', byte(i)}
+		sigs := make([]common.BLSSignature, 0, numOfValidator)
+		for i := 0; i < numOfValidator; i++ {
+			// with different key to sign a distinct msg for per voting step..
+			sig := skeys[i].Sign(msg[:])
+			sigs = append(sigs, sig)
+		}
+		aggSig := AggregateSignatures(sigs)
+		require.Equal(t, true, aggSig.FastAggregateVerify(pubkeys, msg), "BLSSignature did not verify")
+	}
 }
 
 // if the msg is distinct, then the order of public key does not impact the aggregation verification.
@@ -75,11 +187,6 @@ func TestFastAggregateVerify(t *testing.T) {
 		sigs = append(sigs, sig)
 	}
 	aggSig := AggregateSignatures(sigs)
-
-	// change the pubkey orders
-	tmpKey := pubkeys[0]
-	pubkeys[0] = pubkeys[len(pubkeys)-1]
-	pubkeys[len(pubkeys)-1] = tmpKey
 
 	require.Equal(t, true, aggSig.FastAggregateVerify(pubkeys, msg), "BLSSignature did not verify")
 }
