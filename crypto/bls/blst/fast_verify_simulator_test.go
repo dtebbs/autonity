@@ -30,7 +30,7 @@ type Msg struct {
 	S uint8
 }
 
-func (m *Msg) bytes() common.Hash {
+func (m *Msg) hash() common.Hash {
 	b, err := rlp.EncodeToBytes(&Msg{
 		H: m.H,
 		R: m.R,
@@ -76,7 +76,7 @@ func GenerateEpochActivityProof(v []bls.BLSSecretKey, epochLength int, avgRound 
 				}
 				sigs := make([]bls.BLSSignature, 0, len(v))
 				for i := 0; i < len(v); i++ {
-					sig := v[i].Sign(m.bytes().Bytes())
+					sig := v[i].Sign(m.hash().Bytes())
 					sigs = append(sigs, sig)
 				}
 				aggSig := AggregateSignatures(sigs)
@@ -101,7 +101,7 @@ func ValidateEpochActivityProof(p EpochActivityProofV1, startHeight uint64, pubK
 					R: r,
 					S: s,
 				}
-				ok := p.AggregatedSignatures[aggIndex].FastAggregateVerify(pubKeys, m.bytes())
+				ok := p.AggregatedSignatures[aggIndex].FastAggregateVerify(pubKeys, m.hash())
 				if !ok {
 					return false
 				}
