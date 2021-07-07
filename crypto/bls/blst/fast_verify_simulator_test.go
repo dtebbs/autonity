@@ -1,13 +1,16 @@
 package blst
 
 import (
+	"fmt"
 	"github.com/clearmatics/autonity/common"
 	"github.com/clearmatics/autonity/core/types"
 	bls "github.com/clearmatics/autonity/crypto/bls/common"
 	"github.com/clearmatics/autonity/rlp"
 	"github.com/stretchr/testify/require"
 	"io"
+	"sync"
 	"testing"
+	"time"
 )
 
 /*
@@ -25,7 +28,8 @@ import (
 
 // the overview of the activities for the entire epoch, it will be submit by Pi.
 type EpochActivityProofV1 struct {
-	MinRoundsPerHeight   []int                // min round number of each height from 1st height to the last height of the Epoch.
+	MinRoundsPerHeight []int // min round number of each height from 1st height to the last height of the Epoch.
+	// Todo: for actual signatures we would need to make sure that they are ordered otherwise the verification can fail
 	AggregatedSignatures []bls.BLSSignature   // the aggregated msg signature of per voting steps, sorted by height, round and steps.
 	Absences             []AbsentParticipants // the set of validators that are not participated on a specific voting step.
 }
@@ -125,6 +129,55 @@ func ValidateEpochActivityProof(p EpochActivityProofV1, startHeight uint64, pubK
 	return true
 }
 
+// we assume there are no omission faults, let's experience the performance over signature verification
+func ValidateEpochActivityProofWaitGroup(p EpochActivityProofV1, startHeight uint64, pubKeys []bls.BLSPublicKey) bool {
+	var wg sync.WaitGroup
+	var errorCh = make(chan bool, len(p.AggregatedSignatures))
+	var mx *sync.RWMutex
+
+	epochLength := len(p.MinRoundsPerHeight)
+	endHeight := startHeight + uint64(epochLength)
+	aggIndex := 0
+	beforeTest := time.Now()
+	for h := startHeight; h < endHeight; h++ {
+		minRound := p.MinRoundsPerHeight[h-startHeight]
+		for r := uint64(0); r < uint64(minRound); r++ {
+			for s := uint8(0); s < uint8(2); s++ {
+				m := Msg{
+					H: h,
+					R: r,
+					S: s,
+				}
+
+				aggI := aggIndex
+				wg.Add(1)
+
+				go func(h common.Hash, i int) {
+					defer wg.Done()
+
+					mx.RLock()
+					ok := p.AggregatedSignatures[i].FastAggregateVerify(pubKeys, h)
+					mx.RUnlock()
+					if !ok {
+						errorCh <- false
+					}
+
+				}(m.hash(), aggI)
+				aggIndex++
+			}
+		}
+	}
+
+	wg.Wait()
+	afterTest := time.Now()
+	fmt.Println(afterTest.Sub(beforeTest).Seconds())
+	close(errorCh)
+	for i := range errorCh {
+		return i
+	}
+	return true
+}
+
 func TestFastVerificationSimulator(t *testing.T) {
 	committeeSize := 21
 	lengthOfEpoch := 60 * 20 // 20 minutes.
@@ -140,6 +193,26 @@ func TestFastVerificationSimulator(t *testing.T) {
 
 	// validate the proof sent by pi.
 	ok := ValidateEpochActivityProof(eProof, 0, pubKeys)
+	if !ok {
+		panic(ok)
+	}
+}
+
+func TestFastVerificationSimulatorWaitGroup(t *testing.T) {
+	committeeSize := 21
+	lengthOfEpoch := 60 * 20 // 20 minutes.
+	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
+	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
+	require.NoError(t, err)
+
+	// now we generate the epoch proof for a single validator, and verify it. In production case, there would be multiple
+	// ones for verification since all the validator will submit a proof for an epoch.
+
+	// generate the entire proof of activity of the epoch from pi.
+	eProof := GenerateEpochActivityProof(secretKeys, lengthOfEpoch, averageMinRounds)
+
+	// validate the proof sent by pi.
+	ok := ValidateEpochActivityProofWaitGroup(eProof, 0, pubKeys)
 	if !ok {
 		panic(ok)
 	}
