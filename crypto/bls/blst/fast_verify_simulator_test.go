@@ -19,6 +19,8 @@ import (
 
   Save AggSig_h_r_s into a slice that is order by h, r and s.
 
+  Pro: less computing cost.
+  Con: relevant higher storage cost.
 */
 
 // the overview of the activities for the entire epoch, it will be submit by Pi.

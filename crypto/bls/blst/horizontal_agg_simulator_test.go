@@ -11,6 +11,9 @@ import (
   That all the msg sent by Pi are aggregated into a single signature.
   Msgs: (m1, m2, ...... mX), the signature of each msg is aggregated into 1 single signature throughout the epoch.
   AggSignatures: (AggSignature_Node0, AggSignature_Node1, ......)
+
+  Pro: less storage cost.
+  con: high computing cost.
 */
 
 // the overview of the activities for the entire epoch, it will be submit by Pi.
