@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+/*
+  Horizontal Aggregation:
+  That all the msg sent by Pi are aggregated into a single signature.
+  Msgs: (m1, m2, ...... mX), the signature of each msg is aggregated into 1 single signature throughout the epoch.
+  AggSignatures: (AggSignature_Node0, AggSignature_Node1, ......)
+*/
+
 // the overview of the activities for the entire epoch, it will be submit by Pi.
 type EpochActivityProofV2 struct {
 	MinRoundsPerHeight      []uint64                 // min round number of each height from 1st height to the last height of the Epoch.
@@ -87,10 +94,10 @@ func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pu
 }
 
 func TestOneAggSignaturePerNodeSimulator(t *testing.T) {
-	numOfValitors := 21
+	committeeSize := 21
 	lengthOfEpoch := 60 * 20 // 20 minutes.
 	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
-	secretKeys, pubKeys, err := GenerateValidators(numOfValitors)
+	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
 	require.NoError(t, err)
 
 	// now we generate the epoch proof for a single validator, and verify it. In production case, there would be multiple

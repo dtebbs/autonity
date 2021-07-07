@@ -10,6 +10,17 @@ import (
 	"testing"
 )
 
+/*
+  Vertical Aggregation:
+  Aggregate all the signatures of same Msg that signed by members of committee, then save the aggregated signature into
+  a slice that is order by height, round, and step.
+
+  Msg < H, R, S> => (Sig_N1, Sig_N2, ... Sin_N) => AggSig_h_r_s.
+
+  Save AggSig_h_r_s into a slice that is order by h, r and s.
+
+*/
+
 // the overview of the activities for the entire epoch, it will be submit by Pi.
 type EpochActivityProofV1 struct {
 	MinRoundsPerHeight   []int                // min round number of each height from 1st height to the last height of the Epoch.
@@ -113,10 +124,10 @@ func ValidateEpochActivityProof(p EpochActivityProofV1, startHeight uint64, pubK
 }
 
 func TestFastVerificationSimulator(t *testing.T) {
-	numOfValitors := 21
+	committeeSize := 21
 	lengthOfEpoch := 60 * 20 // 20 minutes.
 	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
-	secretKeys, pubKeys, err := GenerateValidators(numOfValitors)
+	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
 	require.NoError(t, err)
 
 	// now we generate the epoch proof for a single validator, and verify it. In production case, there would be multiple
