@@ -1,9 +1,12 @@
 package blst
 
 import (
+	"fmt"
 	"github.com/clearmatics/autonity/crypto/bls/common"
 	"github.com/stretchr/testify/require"
+	"sync"
 	"testing"
+	"time"
 )
 
 /*
@@ -92,6 +95,56 @@ func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pu
 		if !ok {
 			return false
 		}
+	}
+	return true
+}
+
+func ValidateEpochActivityProofV2WaitGroup(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) bool {
+	var wg sync.WaitGroup
+	var errorCh = make(chan bool, len(p.CommitteeActivityProofs))
+
+	epochLength := len(p.MinRoundsPerHeight)
+	endHeight := startHeight + uint64(epochLength)
+	beforeTest := time.Now()
+
+	for i := 0; i < len(p.CommitteeActivityProofs); i++ {
+		pKey := pubKeys[p.CommitteeActivityProofs[i].ValidatorIndex]
+		aggSig := p.CommitteeActivityProofs[i].AggSignature
+		// there is no missing msg, then to re-create all the msgs.
+		keys := make([]common.BLSPublicKey, 0, epochLength*2*2)
+		msgs := make([][32]byte, 0, epochLength*2*2)
+		for h := startHeight; h < endHeight; h++ {
+			minRound := p.MinRoundsPerHeight[h-startHeight]
+			for r := uint64(0); r < minRound; r++ {
+				for s := uint8(0); s < uint8(2); s++ {
+					m := Msg{
+						H: h,
+						R: r,
+						S: s,
+					}
+					keys = append(keys, pKey)
+					msgs = append(msgs, m.hash())
+				}
+			}
+		}
+
+		wg.Add(1)
+		go func(ks []common.BLSPublicKey, ms [][32]byte) {
+			defer wg.Done()
+			ok := aggSig.AggregateVerify(ks, ms)
+			if !ok {
+				errorCh <- false
+			}
+
+		}(keys, msgs)
+	}
+
+	wg.Wait()
+	afterTest := time.Now()
+	fmt.Println(afterTest.Sub(beforeTest).Seconds())
+	close(errorCh)
+	for i := range errorCh {
+		return i
 	}
 	return true
 }
