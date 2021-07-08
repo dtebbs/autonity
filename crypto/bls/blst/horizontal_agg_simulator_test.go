@@ -71,6 +71,7 @@ func GenerateEpochActivityProofV2(v []common.BLSSecretKey, epochLength int, avgR
 func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) bool {
 	epochLength := len(p.MinRoundsPerHeight)
 	endHeight := startHeight + uint64(epochLength)
+	beforeTest := time.Now()
 	for i := 0; i < len(p.CommitteeActivityProofs); i++ {
 		pKey := pubKeys[p.CommitteeActivityProofs[i].ValidatorIndex]
 		aggSig := p.CommitteeActivityProofs[i].AggSignature
@@ -96,6 +97,8 @@ func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pu
 			return false
 		}
 	}
+	afterTest := time.Now()
+	fmt.Println(afterTest.Sub(beforeTest).Seconds())
 	return true
 }
 
@@ -164,5 +167,23 @@ func TestOneAggSignaturePerNodeSimulator(t *testing.T) {
 
 	// validate the proof sent by pi.
 	ok := ValidateEpochActivityProofV2(eProof, uint64(0), pubKeys)
+	require.True(t, ok)
+}
+
+func TestOneAggSignaturePerNodeSimulatorWaitGroup(t *testing.T) {
+	committeeSize := 21
+	lengthOfEpoch := 60 * 20 // 20 minutes.
+	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
+	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
+	require.NoError(t, err)
+
+	// now we generate the epoch proof for a single validator, and verify it. In production case, there would be multiple
+	// ones for verification since all the validator will submit a proof for an epoch.
+
+	// generate the entire proof of activity of the epoch from Pi.
+	eProof := GenerateEpochActivityProofV2(secretKeys, lengthOfEpoch, uint64(averageMinRounds))
+
+	// validate the proof sent by pi.
+	ok := ValidateEpochActivityProofV2WaitGroup(eProof, uint64(0), pubKeys)
 	require.True(t, ok)
 }

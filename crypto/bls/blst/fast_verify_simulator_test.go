@@ -106,6 +106,7 @@ func GenerateEpochActivityProof(v []bls.BLSSecretKey, epochLength int, avgRound 
 
 // we assume there are no omission faults, let's experience the performance over signature verification
 func ValidateEpochActivityProof(p EpochActivityProofV1, startHeight uint64, pubKeys []bls.BLSPublicKey) bool {
+	beforeTest := time.Now()
 	epochLength := len(p.MinRoundsPerHeight)
 	endHeight := startHeight + uint64(epochLength)
 	aggIndex := 0
@@ -126,6 +127,8 @@ func ValidateEpochActivityProof(p EpochActivityProofV1, startHeight uint64, pubK
 			}
 		}
 	}
+	afterTest := time.Now()
+	fmt.Println(afterTest.Sub(beforeTest).Seconds())
 	return true
 }
 
@@ -133,8 +136,7 @@ func ValidateEpochActivityProof(p EpochActivityProofV1, startHeight uint64, pubK
 func ValidateEpochActivityProofWaitGroup(p EpochActivityProofV1, startHeight uint64, pubKeys []bls.BLSPublicKey) bool {
 	var wg sync.WaitGroup
 	var errorCh = make(chan bool, len(p.AggregatedSignatures))
-	var mx *sync.RWMutex
-
+	mx := sync.RWMutex{}
 	epochLength := len(p.MinRoundsPerHeight)
 	endHeight := startHeight + uint64(epochLength)
 	aggIndex := 0
@@ -200,7 +202,7 @@ func TestFastVerificationSimulator(t *testing.T) {
 
 func TestFastVerificationSimulatorWaitGroup(t *testing.T) {
 	committeeSize := 21
-	lengthOfEpoch := 60 * 20 // 20 minutes.
+	lengthOfEpoch := 60 * 20  // 20 minutes.
 	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
 	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
 	require.NoError(t, err)
