@@ -8,7 +8,7 @@ import (
 
 var preventCompilerOptimisationAggSig bls.BLSSignature
 
-func benchmarkNDifferentAggregateSignature(n int, b *testing.B) {
+func benchmarkNAggregateSignatureFromNPKs(n int, b *testing.B) {
 	var sigs []bls.BLSSignature
 	sk, _, err := GenerateValidators(n)
 	for i := 0; i < n; i++ {
@@ -29,15 +29,15 @@ func benchmarkNDifferentAggregateSignature(n int, b *testing.B) {
 // The final benchmark is only run once and that is not statically insignificant, however, the -benchtime flag can be
 // used to increase the total number of times the critical piece of code is run. An example command for running
 // benchmark is: go test -v -run=Bench -bench=. -benchtime=20s. This will ensure the minimum limit of execution is 20s.
-func Benchmark1AggregateSignatureFrom1PK(b *testing.B) {
-	benchmarkNDifferentAggregateSignature(1, b)
+func Benchmark1AggregateSignatureFrom1PKs(b *testing.B) {
+	benchmarkNAggregateSignatureFromNPKs(1, b)
 }
-func Benchmark100DifferentAggregateSignatureFrom1PK(b *testing.B) {
-	benchmarkNDifferentAggregateSignature(100, b)
+func Benchmark100DifferentAggregateSignatureFrom100PKs(b *testing.B) {
+	benchmarkNAggregateSignatureFromNPKs(100, b)
 }
-func Benchmark1000DifferentAggregateSignatureFrom1PK(b *testing.B) {
-	benchmarkNDifferentAggregateSignature(1000, b)
+func Benchmark1000DifferentAggregateSignatureFrom1000PKs(b *testing.B) {
+	benchmarkNAggregateSignatureFromNPKs(1000, b)
 }
-func Benchmark10000DifferentAggregateSignatureFrom1PK(b *testing.B) {
-	benchmarkNDifferentAggregateSignature(10000, b)
+func Benchmark10000DifferentAggregateSignatureFrom10000PKs(b *testing.B) {
+	benchmarkNAggregateSignatureFromNPKs(10000, b)
 }
