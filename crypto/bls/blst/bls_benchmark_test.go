@@ -8,8 +8,7 @@ import (
 
 var preventCompilerOptimisationAggSig bls.BLSSignature
 
-func Benchmark1AggregateSignatureFrom1PK(b *testing.B) {
-	n := 1
+func benchmarkAggregate(n int, b *testing.B) {
 	var sigs []bls.BLSSignature
 	sk, _, err := GenerateValidators(n)
 	for i := 0; i < n; i++ {
@@ -21,69 +20,16 @@ func Benchmark1AggregateSignatureFrom1PK(b *testing.B) {
 	}
 
 	var aggSig bls.BLSSignature
-
 	for n := 0; n < b.N; n++ {
 		aggSig = AggregateSignatures(sigs)
 	}
 	preventCompilerOptimisationAggSig = aggSig
 }
 
-func Benchmark100AggregateSignatureFrom1PK(b *testing.B) {
-	n := 100
-	var sigs []bls.BLSSignature
-	sk, _, err := GenerateValidators(n)
-	for i := 0; i < n; i++ {
-		msg := Msg{H: rand.Uint64(), R: rand.Uint64(), S: uint8(rand.Intn(3))}
-		if err != nil {
-			b.Fatal(err.Error())
-		}
-		sigs = append(sigs, sk[i].Sign(msg.hash().Bytes()))
-	}
-
-	var aggSig bls.BLSSignature
-
-	for n := 0; n < b.N; n++ {
-		aggSig = AggregateSignatures(sigs)
-	}
-	preventCompilerOptimisationAggSig = aggSig
-}
-
-func Benchmark1000AggregateSignatureFrom1PK(b *testing.B) {
-	n := 1000
-	var sigs []bls.BLSSignature
-	sk, _, err := GenerateValidators(n)
-	for i := 0; i < n; i++ {
-		msg := Msg{H: rand.Uint64(), R: rand.Uint64(), S: uint8(rand.Intn(3))}
-		if err != nil {
-			b.Fatal(err.Error())
-		}
-		sigs = append(sigs, sk[i].Sign(msg.hash().Bytes()))
-	}
-
-	var aggSig bls.BLSSignature
-
-	for n := 0; n < b.N; n++ {
-		aggSig = AggregateSignatures(sigs)
-	}
-	preventCompilerOptimisationAggSig = aggSig
-}
-
-func Benchmark10000AggregateSignatureFrom1PK(b *testing.B) {
-	n := 10000
-	var sigs []bls.BLSSignature
-	sk, _, err := GenerateValidators(n)
-	for i := 0; i < n; i++ {
-		msg := Msg{H: rand.Uint64(), R: rand.Uint64(), S: uint8(rand.Intn(3))}
-		if err != nil {
-			b.Fatal(err.Error())
-		}
-		sigs = append(sigs, sk[i].Sign(msg.hash().Bytes()))
-	}
-
-	var aggSig bls.BLSSignature
-
-	for n := 0; n < b.N; n++ {
-		aggSig = AggregateSignatures(sigs)
-	}
-	preventCompilerOptimisationAggSig = aggSig
-}
+// The final benchmark is only run once and that is not statically insignificant, however, the -benchtime flag can be
+// used to increase the total number of times the critical piece of code is run. An example command for running
+// benchmark is: go test -v -run=Bench -bench=. -benchtime=20s. This will ensure the minimum limit of execution is 20s.
+func Benchmark1AggregateSignatureFrom1PK(b *testing.B)     { benchmarkAggregate(1, b) }
+func Benchmark100AggregateSignatureFrom1PK(b *testing.B)   { benchmarkAggregate(100, b) }
+func Benchmark1000AggregateSignatureFrom1PK(b *testing.B)  { benchmarkAggregate(1000, b) }
+func Benchmark10000AggregateSignatureFrom1PK(b *testing.B) { benchmarkAggregate(10000, b) }
