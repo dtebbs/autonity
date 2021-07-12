@@ -66,6 +66,7 @@ require (
 	github.com/wsddn/go-ecdh v0.0.0-20161211032359-48726bab9208
 	github.com/zfjagann/golang-ring v0.0.0-20190304061218-d34796e0a6c2
 	github.com/zimmski/go-leak v0.0.0-20151016212241-a11b0b936d24
+	go.dedis.ch/kyber/v3 v3.0.13
 	go.uber.org/goleak v1.0.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
