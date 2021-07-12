@@ -9,7 +9,7 @@ import (
 var preventCompilerOptimisationAggSig bls.BLSSignature
 var preventCompilerOptimisationVerifyResult bool
 
-func genMsgSignatures(b *testing.B, n int) ([]bls.BLSSecretKey, []bls.BLSPublicKey, []bls.BLSSignature, [][32]byte) {
+func genNMsgSignaturesFromNPks(b *testing.B, n int) ([]bls.BLSSecretKey, []bls.BLSPublicKey, []bls.BLSSignature, [][32]byte) {
 	var sigs []bls.BLSSignature
 	var msgs [][32]byte
 	sks, pks, err := GenerateValidators(n)
@@ -27,7 +27,7 @@ func genMsgSignatures(b *testing.B, n int) ([]bls.BLSSecretKey, []bls.BLSPublicK
 
 func benchmarkNAggregateSignatureFromNPKs(b *testing.B, n int) {
 	var aggSig bls.BLSSignature
-	_, _, sigs, _ := genMsgSignatures(b, n)
+	_, _, sigs, _ := genNMsgSignaturesFromNPks(b, n)
 	for n := 0; n < b.N; n++ {
 		aggSig = AggregateSignatures(sigs)
 	}
@@ -36,7 +36,7 @@ func benchmarkNAggregateSignatureFromNPKs(b *testing.B, n int) {
 
 func benchmarkNAggregateSignatureVerifyFromNPKs(b *testing.B, n int) {
 	var verifyR bool
-	_, pks, sigs, msgs := genMsgSignatures(b, n)
+	_, pks, sigs, msgs := genNMsgSignaturesFromNPks(b, n)
 	aggSig := AggregateSignatures(sigs)
 
 	for n := 0; n < b.N; n++ {
