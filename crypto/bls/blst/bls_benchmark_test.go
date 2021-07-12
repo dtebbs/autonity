@@ -6,6 +6,8 @@ import (
 	"testing"
 )
 
+// The following tutorial was used to base this benchmarking suite:
+// https://dave.cheney.net/2013/06/30/how-to-write-benchmarks-in-go
 var preventCompilerOptimisationAggSig bls.BLSSignature
 var preventCompilerOptimisationVerifyResult bool
 
