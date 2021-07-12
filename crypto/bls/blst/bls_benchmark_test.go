@@ -29,7 +29,9 @@ func benchmarkNDifferentAggregateSignature(n int, b *testing.B) {
 // The final benchmark is only run once and that is not statically insignificant, however, the -benchtime flag can be
 // used to increase the total number of times the critical piece of code is run. An example command for running
 // benchmark is: go test -v -run=Bench -bench=. -benchtime=20s. This will ensure the minimum limit of execution is 20s.
-func Benchmark1AggregateSignatureFrom1PK(b *testing.B) { benchmarkNDifferentAggregateSignature(1, b) }
+func Benchmark1AggregateSignatureFrom1PK(b *testing.B) {
+	benchmarkNDifferentAggregateSignature(1, b)
+}
 func Benchmark100DifferentAggregateSignatureFrom1PK(b *testing.B) {
 	benchmarkNDifferentAggregateSignature(100, b)
 }
