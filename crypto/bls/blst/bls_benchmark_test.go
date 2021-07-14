@@ -4,6 +4,7 @@ import (
 	"fmt"
 	bls "github.com/clearmatics/autonity/crypto/bls/common"
 	"math/rand"
+	"sync"
 	"testing"
 )
 
@@ -18,7 +19,13 @@ import (
 
 var preventCompilerOptimisationVerifyResult bool
 
-func genNMsgSignaturesFromMPks(b *testing.B, numOfMsgs, numOfSigners int) ([]bls.BLSSecretKey, []bls.BLSPublicKey, []bls.BLSSignature, [][32]byte) {
+type horizontalAggregate struct {
+	pub  []bls.BLSPublicKey
+	msgs [][32]byte
+	agg  bls.BLSSignature
+}
+
+func genNMsgSigsFromMPks(numOfMsgs, numOfSigners int) ([]bls.BLSSecretKey, []bls.BLSPublicKey, []bls.BLSSignature, [][32]byte, error) {
 	var sigs []bls.BLSSignature
 	var privK []bls.BLSSecretKey
 	var pubK []bls.BLSPublicKey
@@ -29,7 +36,7 @@ func genNMsgSignaturesFromMPks(b *testing.B, numOfMsgs, numOfSigners int) ([]bls
 	for i := 0; i < numOfMsgs; i++ {
 		msg := Msg{H: rand.Uint64(), R: rand.Uint64(), S: uint8(rand.Intn(3))}
 		if err != nil {
-			b.Fatal(err.Error())
+			return nil, nil, nil, nil, err
 		}
 
 		msgB := msg.hash()
@@ -41,12 +48,33 @@ func genNMsgSignaturesFromMPks(b *testing.B, numOfMsgs, numOfSigners int) ([]bls
 		msgs = append(msgs, msgB)
 	}
 
-	return privK, pubK, sigs, msgs
+	return privK, pubK, sigs, msgs, nil
 }
 
-func benchmarkAggregateNSignatureFromMPKsAndVerify(b *testing.B, numOfMsgs, numOfSigners int) {
+func genHorizontalAggregate(numOfMsgsPerSigner, numOfSigners int) ([]horizontalAggregate, error) {
+	const aggregationSigners = 1
+	var horizontalAggs []horizontalAggregate
+
+	for i := 0; i < numOfSigners; i++ {
+		_, pk, sigs, msgs, err := genNMsgSigsFromMPks(numOfMsgsPerSigner, aggregationSigners)
+		if err != nil {
+			return nil, err
+		}
+		horizontalAggs = append(horizontalAggs, horizontalAggregate{
+			pk,
+			msgs,
+			AggregateSignatures(sigs),
+		})
+	}
+	return horizontalAggs, nil
+}
+
+func aggregateNSigsFromMPKsAndVerify(b *testing.B, numOfMsgs, numOfSigners int) {
 	var verifyR bool
-	_, pks, sigs, msgs := genNMsgSignaturesFromMPks(b, numOfMsgs, numOfSigners)
+	_, pks, sigs, msgs, err := genNMsgSigsFromMPks(numOfMsgs, numOfSigners)
+	if err != nil {
+		b.Fatal(err.Error())
+	}
 	aggSig := AggregateSignatures(sigs)
 
 	b.ResetTimer()
@@ -59,7 +87,7 @@ func benchmarkAggregateNSignatureFromMPKsAndVerify(b *testing.B, numOfMsgs, numO
 	preventCompilerOptimisationVerifyResult = verifyR
 }
 
-func BenchmarkAggregateNSignatureFromMPKsAndVerify(b *testing.B) {
+func BenchmarkAggregateNSigsFromMPKsAndVerify(b *testing.B) {
 	bms := []struct {
 		numOfMsgs    int
 		numOfSigners int
@@ -88,7 +116,100 @@ func BenchmarkAggregateNSignatureFromMPKsAndVerify(b *testing.B) {
 	}
 	for _, bm := range bms {
 		b.Run(fmt.Sprintf("%v messages signed by %v private keys", bm.numOfMsgs, bm.numOfSigners), func(b *testing.B) {
-			benchmarkAggregateNSignatureFromMPKsAndVerify(b, bm.numOfMsgs, bm.numOfSigners)
+			aggregateNSigsFromMPKsAndVerify(b, bm.numOfMsgs, bm.numOfSigners)
+		})
+	}
+}
+
+func horizontalAggregateNFromMPks(b *testing.B, numOfMsgsPerSigner, numOfSigners int, isParallel bool) {
+	var verifyR bool
+	hAggs, err := genHorizontalAggregate(numOfMsgsPerSigner, numOfSigners)
+	if err != nil {
+		b.Fatal(err.Error())
+	}
+
+	if isParallel {
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			var wg sync.WaitGroup
+			var errorCh = make(chan bool, len(hAggs))
+			for _, a := range hAggs {
+				a := a
+				wg.Add(1)
+				go func(agg horizontalAggregate) {
+					defer wg.Done()
+					verifyR = a.agg.AggregateVerify(a.pub, a.msgs)
+					if !verifyR {
+						errorCh <- verifyR
+					}
+
+				}(a)
+			}
+			wg.Wait()
+			close(errorCh)
+			for i := range errorCh {
+				if !i {
+					b.Fatal(i)
+				}
+			}
+		}
+	} else {
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			for _, a := range hAggs {
+				verifyR = a.agg.AggregateVerify(a.pub, a.msgs)
+				if !verifyR {
+					b.Fatal(verifyR)
+				}
+			}
+		}
+	}
+
+	preventCompilerOptimisationVerifyResult = verifyR
+}
+
+func BenchmarkHorizontalAggregateNFromMPks(b *testing.B) {
+	bms := []struct {
+		numOfMsgsPerSigner int
+		numOfSigners       int
+		isParallel         bool
+	}{
+		{10, 10, false},
+		{10, 10, true},
+		{100, 10, false},
+		{100, 10, true},
+		{1000, 10, false},
+		{1000, 10, true},
+		{10000, 10, false},
+		{10000, 10, true},
+		{10, 30, false},
+		{10, 30, true},
+		{100, 30, false},
+		{100, 30, true},
+		{1000, 30, false},
+		{1000, 30, true},
+		{10000, 30, false},
+		{10000, 30, true},
+		{10, 50, false},
+		{10, 50, true},
+		{100, 50, false},
+		{100, 50, true},
+		{1000, 50, false},
+		{1000, 50, true},
+		{10000, 50, false},
+		{10000, 50, true},
+		{10, 100, false},
+		{10, 100, true},
+		{100, 100, false},
+		{100, 100, true},
+		{1000, 100, false},
+		{1000, 100, true},
+		{10000, 100, false},
+		{10000, 100, true},
+	}
+	for _, bm := range bms {
+		b.Run(fmt.Sprintf("%v messages' aggregate per signer for a total of %v signer isParallel %v", bm.numOfMsgsPerSigner, bm.numOfSigners, bm.isParallel), func(b *testing.B) {
+			horizontalAggregateNFromMPks(b, bm.numOfMsgsPerSigner, bm.numOfSigners, bm.isParallel)
 		})
 	}
 }
