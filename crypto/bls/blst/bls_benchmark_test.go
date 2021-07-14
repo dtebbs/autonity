@@ -11,7 +11,6 @@ import (
 // https://pkg.go.dev/testing
 // https://splice.com/blog/lesser-known-features-go-test/
 
-var preventCompilerOptimisationAggSig bls.BLSSignature
 var preventCompilerOptimisationVerifyResult bool
 
 func genNMsgSignaturesFromMPks(b *testing.B, n, m int) ([]bls.BLSSecretKey, []bls.BLSPublicKey, []bls.BLSSignature, [][32]byte) {
@@ -33,17 +32,6 @@ func genNMsgSignaturesFromMPks(b *testing.B, n, m int) ([]bls.BLSSecretKey, []bl
 		msgs = append(msgs, msgB)
 	}
 	return privK, pubK, sigs, msgs
-}
-
-func benchmarkNAggregateSignatureFromMPKs(b *testing.B, n, m int) {
-	var aggSig bls.BLSSignature
-	_, _, sigs, _ := genNMsgSignaturesFromMPks(b, n, m)
-
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		aggSig = AggregateSignatures(sigs)
-	}
-	preventCompilerOptimisationAggSig = aggSig
 }
 
 func benchmarkNAggregateSignatureVerifyFromMPKs(b *testing.B, n, m int) {
@@ -83,19 +71,6 @@ func benchmarkNAggregateSignatureVerifyFromMPKsParallel(b *testing.B, n, m int) 
 // used to increase the total number of times the critical piece of code is run. An example command for running
 // benchmark is: go test -v -run=Bench -bench=. -benchtime=20s -cpu=1,2,4. This will ensure the minimum limit of
 // execution is 20s. Increase the benchtime flag to get more statisticall significant results.
-func Benchmark1AggregateSignatureFrom1PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromMPKs(b, 1, 1)
-}
-func Benchmark100DifferentAggregateSignatureFrom100PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromMPKs(b, 100, 100)
-}
-func Benchmark1000DifferentAggregateSignatureFrom1000PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromMPKs(b, 1000, 1000)
-}
-func Benchmark10000DifferentAggregateSignatureFrom10000PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromMPKs(b, 10000, 1000)
-}
-
 func Benchmark1AggregateSignatureSignatureVerifyFrom1PKs(b *testing.B) {
 	benchmarkNAggregateSignatureVerifyFromMPKs(b, 1, 1)
 }
@@ -109,14 +84,18 @@ func Benchmark10000DifferentAggregateSignatureVerifyFrom10000PKs(b *testing.B) {
 	benchmarkNAggregateSignatureVerifyFromMPKs(b, 10000, 10000)
 }
 
-func Benchmark1000DifferentAggregateSignatureFrom100PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromMPKs(b, 1000, 100)
-}
-
 func Benchmark1000DifferentAggregateSignatureVerifyFrom100PKs(b *testing.B) {
 	benchmarkNAggregateSignatureVerifyFromMPKs(b, 1000, 100)
 }
 
+func Benchmark100000DifferentAggregateSignatureVerifyFrom100PKs(b *testing.B) {
+	benchmarkNAggregateSignatureVerifyFromMPKs(b, 100000, 100)
+}
 func Benchmark1000DifferentAggregateSignatureVerifyFrom100PKsParallel(b *testing.B) {
 	benchmarkNAggregateSignatureVerifyFromMPKsParallel(b, 1000, 100)
+}
+
+// Horizontal Signature Aggregation: where 1 validator is signing multiple messages
+func Benchmark1000DifferentAggregateSignaruesVerifyFrom1PK(b *testing.B) {
+	benchmarkNAggregateSignatureVerifyFromMPKs(b, 1000, 1)
 }
