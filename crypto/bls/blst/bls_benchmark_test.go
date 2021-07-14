@@ -32,29 +32,6 @@ func genNMsgSignaturesFromMPks(b *testing.B, n, m int) ([]bls.BLSSecretKey, []bl
 	return privK, pubK, sigs, msgs
 }
 
-func benchmarkNAggregateSignatureFromNPKs(b *testing.B, n int) {
-	var aggSig bls.BLSSignature
-	_, _, sigs, _ := genNMsgSignaturesFromMPks(b, n, n)
-	for n := 0; n < b.N; n++ {
-		aggSig = AggregateSignatures(sigs)
-	}
-	preventCompilerOptimisationAggSig = aggSig
-}
-
-func benchmarkNAggregateSignatureVerifyFromNPKs(b *testing.B, n int) {
-	var verifyR bool
-	_, pks, sigs, msgs := genNMsgSignaturesFromMPks(b, n, n)
-	aggSig := AggregateSignatures(sigs)
-
-	for n := 0; n < b.N; n++ {
-		verifyR = aggSig.AggregateVerify(pks, msgs)
-		if !verifyR {
-			b.Fatal(verifyR)
-		}
-	}
-	preventCompilerOptimisationVerifyResult = verifyR
-}
-
 func benchmarkNAggregateSignatureFromMPKs(b *testing.B, n, m int) {
 	var aggSig bls.BLSSignature
 	_, _, sigs, _ := genNMsgSignaturesFromMPks(b, n, m)
@@ -83,29 +60,29 @@ func benchmarkNAggregateSignatureVerifyFromMPKs(b *testing.B, n, m int) {
 // benchmark is: go test -v -run=Bench -bench=. -benchtime=20s. This will ensure the minimum limit of execution is 20s.
 // Increase the benchtime flag to get more statisticall significant results.
 func Benchmark1AggregateSignatureFrom1PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromNPKs(b, 1)
+	benchmarkNAggregateSignatureFromMPKs(b, 1, 1)
 }
 func Benchmark100DifferentAggregateSignatureFrom100PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromNPKs(b, 100)
+	benchmarkNAggregateSignatureFromMPKs(b, 100, 100)
 }
 func Benchmark1000DifferentAggregateSignatureFrom1000PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromNPKs(b, 1000)
+	benchmarkNAggregateSignatureFromMPKs(b, 1000, 1000)
 }
 func Benchmark10000DifferentAggregateSignatureFrom10000PKs(b *testing.B) {
-	benchmarkNAggregateSignatureFromNPKs(b, 10000)
+	benchmarkNAggregateSignatureFromMPKs(b, 10000, 1000)
 }
 
 func Benchmark1AggregateSignatureSignatureFrom1PKs(b *testing.B) {
-	benchmarkNAggregateSignatureVerifyFromNPKs(b, 1)
+	benchmarkNAggregateSignatureVerifyFromMPKs(b, 1, 1)
 }
 func Benchmark100DifferentAggregateSignatureSignatureFrom100PKs(b *testing.B) {
-	benchmarkNAggregateSignatureVerifyFromNPKs(b, 100)
+	benchmarkNAggregateSignatureVerifyFromMPKs(b, 100, 100)
 }
 func Benchmark1000DifferentAggregateSignatureSignatureFrom1000PKs(b *testing.B) {
-	benchmarkNAggregateSignatureVerifyFromNPKs(b, 1000)
+	benchmarkNAggregateSignatureVerifyFromMPKs(b, 1000, 1000)
 }
 func Benchmark10000DifferentAggregateSignatureSignatureFrom10000PKs(b *testing.B) {
-	benchmarkNAggregateSignatureVerifyFromNPKs(b, 10000)
+	benchmarkNAggregateSignatureVerifyFromMPKs(b, 10000, 10000)
 }
 
 func Benchmark1000DifferentAggregateSignatureFrom100PKs(b *testing.B) {
