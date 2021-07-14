@@ -206,6 +206,14 @@ func BenchmarkHorizontalAggregateNFromMPks(b *testing.B) {
 		{1000, 100, true},
 		{10000, 100, false},
 		{10000, 100, true},
+		{10, 500, false},
+		{10, 500, true},
+		{100, 500, false},
+		{100, 500, true},
+		{1000, 500, false},
+		{1000, 500, true},
+		{10000, 500, false},
+		{10000, 500, true},
 	}
 	for _, bm := range bms {
 		b.Run(fmt.Sprintf("%v messages' aggregate per signer for a total of %v signer isParallel %v", bm.numOfMsgsPerSigner, bm.numOfSigners, bm.isParallel), func(b *testing.B) {
