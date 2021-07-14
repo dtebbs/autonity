@@ -35,6 +35,8 @@ func genNMsgSignaturesFromMPks(b *testing.B, n, m int) ([]bls.BLSSecretKey, []bl
 func benchmarkNAggregateSignatureFromMPKs(b *testing.B, n, m int) {
 	var aggSig bls.BLSSignature
 	_, _, sigs, _ := genNMsgSignaturesFromMPks(b, n, m)
+
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		aggSig = AggregateSignatures(sigs)
 	}
@@ -46,6 +48,7 @@ func benchmarkNAggregateSignatureVerifyFromMPKs(b *testing.B, n, m int) {
 	_, pks, sigs, msgs := genNMsgSignaturesFromMPks(b, n, m)
 	aggSig := AggregateSignatures(sigs)
 
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		verifyR = aggSig.AggregateVerify(pks, msgs)
 		if !verifyR {
@@ -91,4 +94,15 @@ func Benchmark1000DifferentAggregateSignatureFrom100PKs(b *testing.B) {
 
 func Benchmark1000DifferentAggregateSignatureSignatureFrom100PKs(b *testing.B) {
 	benchmarkNAggregateSignatureVerifyFromMPKs(b, 1000, 100)
+}
+
+func BenchmarkTest(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		benchmarkNAggregateSignatureVerifyFromMPKs(b, 100, 100)
+		benchmarkNAggregateSignatureVerifyFromMPKs(b, 100, 100)
+	}
+	//for i := 0; i < b.N; i++ {
+	//	benchmarkNAggregateSignatureVerifyFromMPKs(b, 100,100)
+	//	benchmarkNAggregateSignatureVerifyFromMPKs(b, 100,100)
+	//}
 }
