@@ -172,52 +172,48 @@ func BenchmarkHorizontalAggregateNFromMPks(b *testing.B) {
 	bms := []struct {
 		numOfMsgsPerSigner int
 		numOfSigners       int
+		totalMessages      int
 		isParallel         bool
 	}{
-		{10, 10, false},
-		{10, 10, true},
-		{100, 10, false},
-		{100, 10, true},
-		{1000, 10, false},
-		{1000, 10, true},
-		{10000, 10, false},
-		{10000, 10, true},
-		{10, 30, false},
-		{10, 30, true},
-		{100, 30, false},
-		{100, 30, true},
-		{1000, 30, false},
-		{1000, 30, true},
-		{10000, 30, false},
-		{10000, 30, true},
-		{10, 50, false},
-		{10, 50, true},
-		{100, 50, false},
-		{100, 50, true},
-		{1000, 50, false},
-		{1000, 50, true},
-		{10000, 50, false},
-		{10000, 50, true},
-		{10, 100, false},
-		{10, 100, true},
-		{100, 100, false},
-		{100, 100, true},
-		{1000, 100, false},
-		{1000, 100, true},
-		{10000, 100, false},
-		{10000, 100, true},
-		{10, 500, false},
-		{10, 500, true},
-		{100, 500, false},
-		{100, 500, true},
-		{1000, 500, false},
-		{1000, 500, true},
-		{10000, 500, false},
-		{10000, 500, true},
+		{10, 10, 10 * 10, false},
+		{10, 10, 10 * 10, true},
+		{100, 10, 100 * 10, false},
+		{100, 10, 100 * 10, true},
+		{1000, 10, 1000 * 10, false},
+		{1000, 10, 1000 * 10, true},
+		{3000, 10, 3000 * 10, false},
+		{3000, 10, 3000 * 10, true},
+		{10, 30, 10 * 30, false},
+		{10, 30, 10 * 30, true},
+		{100, 30, 100 * 30, false},
+		{100, 30, 100 * 30, true},
+		{1000, 30, 1000 * 30, false},
+		{1000, 30, 1000 * 30, true},
+		{3000, 30, 3000 * 30, false},
+		{3000, 30, 3000 * 30, true},
+		{10, 50, 10 * 50, false},
+		{10, 50, 10 * 50, true},
+		{100, 50, 100 * 50, false},
+		{100, 50, 100 * 50, true},
+		{1000, 50, 1000 * 50, false},
+		{1000, 50, 1000 * 50, true},
+		{3000, 50, 3000 * 50, false},
+		{3000, 50, 3000 * 50, true},
+		{10, 100, 10 * 100, false},
+		{10, 100, 10 * 100, true},
+		{100, 100, 100 * 100, false},
+		{100, 100, 100 * 100, true},
+		{1000, 100, 1000 * 100, false},
+		{1000, 100, 1000 * 100, true},
+		{3000, 100, 3000 * 100, false},
+		{3000, 100, 3000 * 100, true},
 	}
 	for _, bm := range bms {
-		b.Run(fmt.Sprintf("%v messages' aggregate per signer for a total of %v signer isParallel %v", bm.numOfMsgsPerSigner, bm.numOfSigners, bm.isParallel), func(b *testing.B) {
-			horizontalAggregateNFromMPks(b, bm.numOfMsgsPerSigner, bm.numOfSigners, bm.isParallel)
-		})
+		b.Run(fmt.Sprintf("%v signers horizontally aggregating %v messages per signer for a total of %v "+
+			"messages isParallel %v",
+			bm.numOfSigners, bm.numOfMsgsPerSigner, bm.totalMessages, bm.isParallel),
+			func(b *testing.B) {
+				horizontalAggregateNFromMPks(b, bm.numOfMsgsPerSigner, bm.numOfSigners, bm.isParallel)
+			})
 	}
 }
