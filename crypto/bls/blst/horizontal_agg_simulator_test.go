@@ -68,7 +68,7 @@ func GenerateEpochActivityProofV2(v []common.BLSSecretKey, epochLength int, avgR
 	return eProof
 }
 
-func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) bool {
+func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) (time.Duration, bool) {
 	epochLength := len(p.MinRoundsPerHeight)
 	endHeight := startHeight + uint64(epochLength)
 	beforeTest := time.Now()
@@ -94,12 +94,12 @@ func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pu
 		}
 		ok := aggSig.AggregateVerify(keys, msgs)
 		if !ok {
-			return false
+			return 0, false
 		}
 	}
 	afterTest := time.Now()
-	fmt.Println(afterTest.Sub(beforeTest).Seconds())
-	return true
+	//fmt.Println(afterTest.Sub(beforeTest).Seconds())
+	return afterTest.Sub(beforeTest), true
 }
 
 func ValidateEpochActivityProofV2WaitGroup(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) bool {
@@ -152,9 +152,30 @@ func ValidateEpochActivityProofV2WaitGroup(p EpochActivityProofV2, startHeight u
 	return true
 }
 
+// return the time cost of the verification of aggregated signatures.
+func run(committeeSize int, epochLength int, avgRound int) time.Duration {
+	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
+	if err != nil {
+		panic(err)
+	}
+
+	// now we generate the epoch proof for a single validator, and verify it. In production case, there would be multiple
+	// ones for verification since all the validator will submit a proof for an epoch.
+
+	// generate the entire proof of activity of the epoch from Pi.
+	eProof := GenerateEpochActivityProofV2(secretKeys, epochLength, uint64(avgRound))
+
+	// validate the proof sent by pi.
+	duration, ok := ValidateEpochActivityProofV2(eProof, uint64(0), pubKeys)
+	if !ok {
+		panic(ok)
+	}
+	return duration
+}
+
 func TestOneAggSignaturePerNodeSimulator(t *testing.T) {
 	committeeSize := 21
-	lengthOfEpoch := 60 * 20 // 20 minutes.
+	lengthOfEpoch := 20      // 30 seconds.
 	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
 	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
 	require.NoError(t, err)
@@ -166,13 +187,13 @@ func TestOneAggSignaturePerNodeSimulator(t *testing.T) {
 	eProof := GenerateEpochActivityProofV2(secretKeys, lengthOfEpoch, uint64(averageMinRounds))
 
 	// validate the proof sent by pi.
-	ok := ValidateEpochActivityProofV2(eProof, uint64(0), pubKeys)
+	_, ok := ValidateEpochActivityProofV2(eProof, uint64(0), pubKeys)
 	require.True(t, ok)
 }
 
 func TestOneAggSignaturePerNodeSimulatorWaitGroup(t *testing.T) {
 	committeeSize := 21
-	lengthOfEpoch := 60 * 20 // 20 minutes.
+	lengthOfEpoch := 20      // 30 seconds.
 	averageMinRounds := 2    // we assume there at least have 2 rounds for each height to make the decision.
 	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
 	require.NoError(t, err)
@@ -186,4 +207,80 @@ func TestOneAggSignaturePerNodeSimulatorWaitGroup(t *testing.T) {
 	// validate the proof sent by pi.
 	ok := ValidateEpochActivityProofV2WaitGroup(eProof, uint64(0), pubKeys)
 	require.True(t, ok)
+}
+
+func TestHorizontalAggWithDifferentSettings(t *testing.T) {
+	tests := []struct{
+		name string
+		committeSize int
+		lengthOfEPoch int
+		averageRound int
+	}{
+		{
+			"horizontal aggregation: \t 10 validators, 30 blocks epoch, average min round 2",
+			10,
+			30,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 10 validators, 60 blocks epoch, average min round 2",
+			10,
+			60,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 10 validators, 90 blocks epoch, average min round 2",
+			10,
+			90,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 15 validators, 30 blocks epoch, average min round 2",
+			15,
+			30,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 15 validators, 60 blocks epoch, average min round 2",
+			15,
+			60,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 15 validators, 90 blocks epoch, average min round 2",
+			15,
+			90,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 21 validators, 30 blocks epoch, average min round 2",
+			21,
+			30,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 21 validators, 60 blocks epoch, average min round 2",
+			21,
+			60,
+			2,
+		},
+		{
+			"horizontal aggregation: \t 21 validators, 90 blocks epoch, average min round 2",
+			21,
+			90,
+			2,
+		},
+	}
+
+	times := 10
+	fmt.Println()
+	for _, test := range tests {
+		fmt.Println(test.name)
+		d := time.Duration(0)
+		for i:=0; i<times; i++ {
+			d += run(test.committeSize, test.lengthOfEPoch, test.averageRound)
+		}
+		fmt.Println("average time: \t\t\t\t", d.Seconds()/float64(times), "seconds to verify", test.committeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
+		fmt.Println()
+	}
 }
