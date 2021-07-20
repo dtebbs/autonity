@@ -102,7 +102,7 @@ func ValidateEpochActivityProofV2(p EpochActivityProofV2, startHeight uint64, pu
 	return afterTest.Sub(beforeTest), true
 }
 
-func ValidateEpochActivityProofV2WaitGroup(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) bool {
+func ValidateEpochActivityProofV2WaitGroup(p EpochActivityProofV2, startHeight uint64, pubKeys []common.BLSPublicKey) (time.Duration, bool) {
 	var wg sync.WaitGroup
 	var errorCh = make(chan bool, len(p.CommitteeActivityProofs))
 
@@ -144,16 +144,15 @@ func ValidateEpochActivityProofV2WaitGroup(p EpochActivityProofV2, startHeight u
 
 	wg.Wait()
 	afterTest := time.Now()
-	fmt.Println(afterTest.Sub(beforeTest).Seconds())
 	close(errorCh)
 	for i := range errorCh {
-		return i
+		panic(i)
 	}
-	return true
+	return afterTest.Sub(beforeTest), true
 }
 
 // return the time cost of the verification of aggregated signatures.
-func run(committeeSize int, epochLength int, avgRound int) time.Duration {
+func run(committeeSize int, epochLength int, avgRound int, multi_thread bool) time.Duration {
 	secretKeys, pubKeys, err := GenerateValidators(committeeSize)
 	if err != nil {
 		panic(err)
@@ -164,13 +163,20 @@ func run(committeeSize int, epochLength int, avgRound int) time.Duration {
 
 	// generate the entire proof of activity of the epoch from Pi.
 	eProof := GenerateEpochActivityProofV2(secretKeys, epochLength, uint64(avgRound))
-
 	// validate the proof sent by pi.
-	duration, ok := ValidateEpochActivityProofV2(eProof, uint64(0), pubKeys)
-	if !ok {
-		panic(ok)
+	if multi_thread == false {
+		duration, ok := ValidateEpochActivityProofV2(eProof, uint64(0), pubKeys)
+		if !ok {
+			panic(ok)
+		}
+		return duration
+	} else {
+		duration, ok := ValidateEpochActivityProofV2WaitGroup(eProof, uint64(0), pubKeys)
+		if !ok {
+			panic(ok)
+		}
+		return duration
 	}
-	return duration
 }
 
 func TestOneAggSignaturePerNodeSimulator(t *testing.T) {
@@ -205,7 +211,7 @@ func TestOneAggSignaturePerNodeSimulatorWaitGroup(t *testing.T) {
 	eProof := GenerateEpochActivityProofV2(secretKeys, lengthOfEpoch, uint64(averageMinRounds))
 
 	// validate the proof sent by pi.
-	ok := ValidateEpochActivityProofV2WaitGroup(eProof, uint64(0), pubKeys)
+	_, ok := ValidateEpochActivityProofV2WaitGroup(eProof, uint64(0), pubKeys)
 	require.True(t, ok)
 }
 
@@ -278,9 +284,14 @@ func TestHorizontalAggWithDifferentSettings(t *testing.T) {
 		fmt.Println(test.name)
 		d := time.Duration(0)
 		for i:=0; i<times; i++ {
-			d += run(test.committeSize, test.lengthOfEPoch, test.averageRound)
+			d += run(test.committeSize, test.lengthOfEPoch, test.averageRound, false)
 		}
-		fmt.Println("average time: \t\t\t\t", d.Seconds()/float64(times), "seconds to verify", test.committeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
+		fmt.Println("single thread AVG time: \t", d.Seconds()/float64(times), "seconds to verify", test.committeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
+		d_multithread := time.Duration(0)
+		for i:=0; i<times; i++ {
+			d_multithread += run(test.committeSize, test.lengthOfEPoch, test.averageRound, true)
+		}
+		fmt.Println("multi thread AVG time: \t\t", d_multithread.Seconds()/float64(times), "seconds to verify", test.committeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
 		fmt.Println()
 	}
 }
