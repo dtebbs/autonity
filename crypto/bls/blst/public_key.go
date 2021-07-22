@@ -45,6 +45,19 @@ func PublicKeyFromBytes(pubKey []byte) (common.BLSPublicKey, error) {
 	return pubKeyObj, nil
 }
 
+func AggregatePublicKeysV2(pubs []common.BLSPublicKey) common.BLSPublicKey {
+	agg := new(blstAggregatePublicKey)
+	mulP1 := make([]*blstPublicKey, 0, len(pubs))
+	for _, pubkey := range pubs {
+		mulP1 = append(mulP1, pubkey.(*PublicKey).p)
+	}
+	// No group check needed here since it is done in PublicKeyFromBytes
+	// Note the checks could be moved from PublicKeyFromBytes into Aggregate
+	// and take advantage of multi-threading.
+	agg.Aggregate(mulP1, false)
+	return &PublicKey{p: agg.ToAffine()}
+}
+
 // AggregatePublicKeys aggregates the provided raw public keys into a single key.
 func AggregatePublicKeys(pubs [][]byte) (common.BLSPublicKey, error) {
 	agg := new(blstAggregatePublicKey)
