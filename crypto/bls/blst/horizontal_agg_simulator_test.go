@@ -217,10 +217,10 @@ func TestOneAggSignaturePerNodeSimulatorWaitGroup(t *testing.T) {
 
 func TestHorizontalAggWithDifferentSettings(t *testing.T) {
 	tests := []struct{
-		name string
-		committeSize int
+		name          string
+		committeeSize int
 		lengthOfEPoch int
-		averageRound int
+		averageRound  int
 	}{
 		{
 			"horizontal aggregation: \t 10 validators, 30 blocks epoch, average min round 2",
@@ -284,14 +284,14 @@ func TestHorizontalAggWithDifferentSettings(t *testing.T) {
 		fmt.Println(test.name)
 		d := time.Duration(0)
 		for i:=0; i<times; i++ {
-			d += run(test.committeSize, test.lengthOfEPoch, test.averageRound, false)
+			d += run(test.committeeSize, test.lengthOfEPoch, test.averageRound, false)
 		}
-		fmt.Println("single thread AVG time: \t", d.Seconds()/float64(times), "seconds to verify", test.committeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
+		fmt.Println("single thread AVG time: \t", d.Seconds()/float64(times), "seconds to verify", test.committeeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
 		d_multithread := time.Duration(0)
 		for i:=0; i<times; i++ {
-			d_multithread += run(test.committeSize, test.lengthOfEPoch, test.averageRound, true)
+			d_multithread += run(test.committeeSize, test.lengthOfEPoch, test.averageRound, true)
 		}
-		fmt.Println("multi thread AVG time: \t\t", d_multithread.Seconds()/float64(times), "seconds to verify", test.committeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
+		fmt.Println("multi thread AVG time: \t\t", d_multithread.Seconds()/float64(times), "seconds to verify", test.committeeSize, "sets of aggregated messages with each set of", test.lengthOfEPoch*test.averageRound*2, "messages")
 		fmt.Println()
 	}
 }
