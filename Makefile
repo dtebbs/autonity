@@ -8,6 +8,7 @@
 .PHONY: autonity-darwin autonity-darwin-386 autonity-darwin-amd64
 .PHONY: autonity-windows autonity-windows-386 autonity-windows-amd64
 
+SHELL=/bin/bash
 NPMBIN= $(shell npm bin)
 BINDIR = ./build/bin
 GO ?= latest
