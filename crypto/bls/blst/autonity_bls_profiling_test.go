@@ -407,21 +407,21 @@ func run(committeeSize int, epochLength int, avgRound int, times int) {
 		panic(err)
 	}
 
-	// test vertical aggregation.
-	d := time.Duration(0)
-	eProofVertical := NewVerticalAggEProof(secretKeys, epochLength, uint64(avgRound))
-	for i := 0; i < times; i++ {
-		d += eProofVertical.ValidateEProof(uint64(0), pubKeys)
-	}
-	fmt.Println("VerticalAGG AVG time: \t\t", d.Seconds()/float64(times), "seconds to verify", committeeSize, "sets of aggregated messages with each set of", epochLength*avgRound*2, "messages")
-
 	// test horizontal aggregation.
-	d = time.Duration(0)
+	d := time.Duration(0)
 	eProofHorizontal := NewHorizontalAggEProof(secretKeys, epochLength, uint64(avgRound))
 	for i := 0; i < times; i++ {
 		d += eProofHorizontal.ValidateEProof(uint64(0), pubKeys)
 	}
 	fmt.Println("HorizontalAGG AVG time: \t", d.Seconds()/float64(times), "seconds to verify", committeeSize, "sets of aggregated messages with each set of", epochLength*avgRound*2, "messages")
+
+	// test vertical aggregation.
+	d = time.Duration(0)
+	eProofVertical := NewVerticalAggEProof(secretKeys, epochLength, uint64(avgRound))
+	for i := 0; i < times; i++ {
+		d += eProofVertical.ValidateEProof(uint64(0), pubKeys)
+	}
+	fmt.Println("VerticalAGG AVG time: \t\t", d.Seconds()/float64(times), "seconds to verify", committeeSize, "sets of aggregated messages with each set of", epochLength*avgRound*2, "messages")
 
 	// test hybrid aggregation.
 	d = time.Duration(0)
