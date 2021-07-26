@@ -393,7 +393,9 @@ func TestSignatureAggregationComparing(t *testing.T) {
 	fmt.Println()
 	for _, test := range tests {
 		fmt.Println()
-		fmt.Println("TestCase: ", test.name, ", total msgs: ", test.lengthOfEPoch*test.averageRound*2, "*", test.committeeSize)
+		fmt.Println("TestCase: \t\t\t\t\t", test.name, ", total msgs: ", test.lengthOfEPoch*test.averageRound*2, "*",
+			test.committeeSize, "=", test.lengthOfEPoch*test.averageRound*2*test.committeeSize)
+
 		run(test.committeeSize, test.lengthOfEPoch, test.averageRound, times)
 		fmt.Println()
 	}
